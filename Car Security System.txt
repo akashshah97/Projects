@@ -1,0 +1,198 @@
+#include<reg51.h>
+#include<string.h>
+
+sbit RS = P2^6;
+sbit EN = P2^7;
+
+sbit BUZZER = P1^0;
+
+
+void delay()
+{
+  int i;
+  for(i=0;i<1000;i++);
+}
+
+void ldelay()
+{
+  long int i;
+  for(i=0;i<50000;i++);
+}
+
+void command(char c)
+{
+ P0 = c;
+ RS = 0;
+ EN = 1;
+ delay();
+ EN = 0;
+}
+void dat(char c)
+{
+ P0 = c;
+ RS = 1;
+ EN = 1;
+ delay();
+ EN = 0;
+}
+void transmit(char t)
+{
+ SBUF = t;
+ while(TI==0);
+ TI = 0;
+}
+char receiv()
+{
+ char a;
+ while(RI==0);
+ RI = 0;
+ a = SBUF;
+ return(a);
+}
+void main()
+{
+ int i,j1=0,j2=0,j3=0;
+ char m[13],m1[13],mn[11],mn1[11];
+
+ code char l1[]=" CAR SECURITY  ";
+ code char l2[]="     SYSTEM";
+
+ code char ref1[] = "84008103494F";		  
+ code char ref2[] = "84008103E0E6";
+ 
+ code char name1[] = "AKASH ";
+ code char name2[] = "JAY   ";
+
+ code char mono1[] = "9408879407";
+ code char mono2[] = "9408879407";
+
+ code char iv[] = "LIC NOT MATCH  ";
+ code char at[] = "AT+CMGS=";
+ code char msg[] = "LICENSE NUMBER 84008103494F ";
+  code char ms[] = "LICENSE NUMBER 84008103E0EF ";
+
+ SCON = 0X50;
+ TMOD = 0X20;
+ TH1 = 0XFD;
+ TR1 = 1;
+
+ BUZZER = 0;
+
+ command(0x38);
+ command(0x0E);
+
+start:
+ command(0x01);
+
+ for(i=0;l1[i] != '\0';i++)
+ 	dat(l1[i]);
+
+ command(0xC0);
+
+  for(i=0;l2[i] != '\0';i++)
+  	dat(l2[i]);
+
+
+ while(1)
+ {
+   for(i=0;i<12;i++)
+   {					
+    m[i] = receiv();
+   }
+   m[i] = '\0';
+      for(i=0;i<12;i++)
+   {					
+    m1[i] = receiv();
+   }
+   m1[i] = '\0';
+
+   j1 = strcmp(m,ref1);
+   j2 = strcmp(m1,ref2);
+ 
+   command(0x01);
+   command(0xC0);
+	for(i=0;m[i] != '\0';i++)
+	  dat(m[i]);
+   command(0x80);
+   	for(i=0;m1[i] != '\0';i++)
+	  dat(m1[i]);
+   command(0x80);
+
+   if(j1==0)
+   {
+	  	BUZZER = 1;
+	for(i=0;name1[i] != '\0';i++)
+	  dat(name1[i]);
+	  	  	ldelay();
+	BUZZER = 0;
+	strcpy(mn,mono1);
+   }
+   else if(j2==0)
+   {
+      	BUZZER = 1;
+	for(i=0;name2[i] != '\0';i++)
+	  dat(name2[i]);
+	  	ldelay();
+	BUZZER = 0;
+	strcpy(mn1,mono2);
+   }
+   else
+   {
+   	BUZZER = 1;
+	for(i=0;iv[i] != '\0';i++)
+	  dat(iv[i]);
+	ldelay();
+	BUZZER = 0;
+	goto start;
+   }
+   if(j1==0)
+   {
+   for(i=0;at[i]!='\0';i++)
+   	transmit(at[i]);
+
+	transmit('"');
+
+   for(i=0;mn[i]!='\0';i++)
+   	transmit(mn[i]);
+
+	transmit('"');
+
+	transmit(0x0D);
+	transmit(0x0A);
+
+	ldelay();
+
+   for(i=0;msg[i]!='\0';i++)
+   	transmit(msg[i]);
+
+	transmit(0x1A);
+
+	goto start;
+	}
+	else if(j2==0)
+	{
+	for(i=0;at[i]!='\0';i++)
+   	transmit(at[i]);
+
+	transmit('"');
+
+   for(i=0;mn1[i]!='\0';i++)
+   	transmit(mn1[i]);
+
+	transmit('"');
+
+	transmit(0x0D);
+	transmit(0x0A);
+
+	ldelay();
+
+   for(i=0;ms[i]!='\0';i++)
+   	transmit(ms[i]);
+
+	transmit(0x1A);
+
+	goto start;
+ 
+}
+}
+}
